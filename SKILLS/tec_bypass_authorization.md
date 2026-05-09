@@ -35,8 +35,62 @@ if the user doesn't specify whether full blackbox pentest or normal security ass
 
 # Full Methodology
 
-## Bypass Authorization 
+## Recon  
+
+### Collecting subdomains
+
+Advanced subdomain reconnaissance module designed to collect, validate, and analyze subdomains from multiple public intelligence sources including crt.sh, SecurityTrails, AlienVault OTX, WebArchive, GitHub, Google Dorks, and other passive reconnaissance platforms in order to discover hidden assets, exposed services, and undocumented attack surfaces.
+
+- Run the subfinder tool with the -d option to specify the domain and the -o option to specify the output file.
+- Run the curl.exe tool on the crt.sh directory to extract all domains, filter the subdomains, and save them to a file.
+- Run the curl.exe tool on securitytrails.com to extract all domains, filter the subdomains, and save them to a file. Use the command with the API key.
+```http
+curl --request GET   --url "https://api.securitytrails.com/v1/domain/{Enter_domain}/subdomains" --header "apikey: 9miRSYa2D2xfJ4LRuObvjifGFtzyeI2i"
+```
+- Run curl.exe on alienvault.com through the following endpoint and filter the domains in the file.
+```http
+https://otx.alienvault.com/api/v1/indicators/domain/{Enter_domain}/url_list?limit=500&page=1
+```
+- Run curl.exe on virustotal.com through the following endpoint and filter the domains in the file.
+```http
+https://www.virustotal.com/vtapi/v2/domain/report?apikey=43e499339d0e42ac277d8d09b79c0cd44f8acdf526492de2519f63ff010ce292&domain={Enter_domain}
+```
+
+ **In VirusTotal, there's a trick you should always apply: for every subdomain you extract from the previous tools, place it in the same URL I provided for VirusTotal. Then, extract all the new domains and repeat this process for each domain you extract.**
 
 
+Filter all the files you extracted at this stage, and extract all the unique subdomains into a single file. Then let me know if you need any modifications or additions.
+
+
+### Filter 
+The next stage involves filtering all the unique subdomains extracted in the previous stage, aiming to identify live domains.
+
+- Run the httpx tool and use only the following options: -sc -cl -ct -location -web-server -o, then save them to a file.
 
 ## Hunt
+An advanced vulnerability detection and attack surface analysis module, focusing on identifying security weaknesses across all subdomains, endpoints, APIs, parameters, authentication processes, and discovered backend system behaviors.
+
+### Step 1
+
+Look at all the interesting subdomains and extract them to a file (in this step, search repeatedly for all the interesting subdomains).
+
+Don't ignore the previous instruction; implement it. If you don't implement it, it means you've failed.
+### Step 2
+
+Analyze all subdomains that return 200 and extract all the JavaScript files into a separate file (do not ignore this step and perform it without ignoring each domain that returns 200).
+
+Don't ignore the previous instruction; implement it. If you don't implement it, it means you've failed.
+
+### step 3
+To ensure good results, take your time with this task
+
+
+- Extract all the domains that return 401, 301, and 302 errors and place them in a separate file. Then, search the source code for the JavaScript files and find all the endpoints contained within them. 
+Collect the endpoint data using WebArchive and VirusTotal.
+```http
+https://www.virustotal.com/vtapi/v2/domain/report?apikey=43e499339d0e42ac277d8d09b79c0cd44f8acdf526492de2519f63ff010ce292&domain={Enter-Domain}
+https://web.archive.org/cdx/search/cdx?url={Enter-domain}%2F*&output=text&fl=original&collapse=urlkey&from=
+```
+
+- 
+
