@@ -93,6 +93,8 @@ You are not just scanning — you are applying real-world hacker knowledge to br
 
 # Information gathering phase and endpoints from JavaScript files
 
+Collecting endpoints and using techniques to identify endpoints from JavaScript files is the most important stage, and since you are an expert in this work, I will rely on you.
+
 
 ## JAVASCRIPT INTELLIGENCE MINING 
 
@@ -131,13 +133,26 @@ STRICT RULES:
 ==Ignoring the strict rules above means failure==
 
 
-### CATEGORY 3: AFTER ANALYZING EACH JS FILE:
+### CATEGORY 3
+In this category, you need to extract all the endpoints using a professional technique that I will explain to you.
 
-  1. List every finding from the 2 categories above
+
+
+
+### CATEGORY 4: AFTER ANALYZING EACH JS FILE:
+
+  1. List every finding from the 3 categories above
   2. For every endpoint discovered: test it immediately with curl.exe
   3. Place all the endpoints you discovered in a file
 
 
+
+
+
+
+
+
+Because this stage is so important, dedicate an hour to the inspection process. Don't tell me you've extracted everything and stop; continue searching and keep doing this for another hour. After that, complete the remaining tasks.
 
 
 
