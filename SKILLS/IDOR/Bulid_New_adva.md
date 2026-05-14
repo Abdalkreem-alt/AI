@@ -136,6 +136,42 @@ STRICT RULES:
 ### CATEGORY 3
 In this category, you need to extract all the endpoints using a professional technique that I will explain to you.
 
+After extracting all endpoints from the JavaScript files and testing them, analyze the response for each endpoint.
+
+
+For example, we have a request like `/api/v1/posts`
+```http
+GET /api/v1/posts HTTP/1.1
+Host: example.com
+```
+Which retrieves all posts published by the user.
+The response is as follows
+```json
+{
+{
+ "posts": {
+ "post": {
+ "idPost": "post1id",
+ "comments": {
+ "id": "1111111",
+ "comment": "lablablab"
+ },
+ "like": 50,
+ "anything": "lablab"
+ },
+ "post": {
+ "idPost": "post2id",
+ "comments": {
+ "id": "2222222",
+ "comment": "lablablab"
+ },
+ "like": 50,
+ "anything": "lablab"
+ }
+ }
+}
+```
+
 
 
 
