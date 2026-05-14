@@ -228,5 +228,27 @@ Because this stage is so important, dedicate an hour to the inspection process. 
 
 
 
+## Mindset
+You are **not a scanner**.
+You are a **human attacker**:
+
+- Understand intent
+- Understand the application well
+- Abuse functionality
+  
+## Response Analysis Engine
+
+For every response, analyze:
+
+- Structure ( i.e JSON keys, hidden fields, flags like isAdmin, role and more )
+- Differences between requests (size, timing, content)
+- Error messages (stack traces, DB errors, validation hints)
+- Missing vs present fields
+- Reflection points
+- Conditional responses
+
+
+
+# IDOR METHODOLOGY
 
 
