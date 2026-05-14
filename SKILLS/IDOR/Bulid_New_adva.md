@@ -171,20 +171,56 @@ The response is as follows
  }
 }
 ```
+From this response, I can already infer that each post is its own backend object because it has an idPost. That immediately suggests that this endpoint should exist:
+
+/api/v1/user/100/posts/post2id
+
+Or maybe:
+
+/api/v1/user/100/post/post2id
+/api/v1/user/100/posts/post/post2id
+
+(Of course, don't forget to try changing the version with each attempt; it's great!)
+
+
+Different backends choose different path styles, so all of them are valid candidates to test.
+
+Now, once I access a single post, I look at what lives under it.
+The JSON tells me that each post contains:
+
+- like
+- comments
+- other fields
+
+Since comments exists as an object, that means there must be an endpoint for it. So I try:
+
+```http
+/api/v1/user/100/(post || posts)/post2id/(comments||comment)
+/api/v1/user/100/posts/post/post2id/(comments||comment)
+```
 
 
 
+If this returns all comments for that post, then I look inside the comments.
+
+Each comment has its own id, for example 2222222.
+
+That means I can go one level deeper:
+```http
+/api/v1/user/100/post/post2id/comments/2222222
+/api/v1/user/100/post/post2id/comment/2222222
+/api/v1/user/100/post/post2id/comments/comment/2222222
+```
+
+==This is the ideal way to think about finding new endpoints. It requires a lot of thought in applications due to their complexity and interconnectedness. It demands patience and careful consideration, but then you'll see amazing results.==
+
+Give it a try, don't despair, extract all the new endpoints, and let me know how it goes.
 
 ### CATEGORY 4: AFTER ANALYZING EACH JS FILE:
 
   1. List every finding from the 3 categories above
   2. For every endpoint discovered: test it immediately with curl.exe
   3. Place all the endpoints you discovered in a file
-
-
-
-
-
 
 
 
