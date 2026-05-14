@@ -49,7 +49,97 @@ You MUST NOT stop at the GitHub file content only.
 
 The file contains links to genuine HackerOne reports on hackerone.com. You should extract all the HackerOne report URLs within the file, then use a webfetch tool to open and read each report directly from hackerone.com.
 
-## To Do 
+The scan is incomplete if you only read the GitHub files without opening the HackerOne report links.
 
-# SKILL: Insecure Direct Object References (IDOR)
+STRICT RULES:
+- Use webfetch only.
+- Do NOT use git clone.
+- DO NOT skip files.
+- Do NOT ignore embedded HackerOne links.
+- Do NOT only summarize the GitHub index files.
+- For every bug type file, extract all hackerone.com report URLs.
+- Visit each HackerOne report URL.
+- Read the full report content available on the page.
+- Learn the vulnerability type, affected feature, root cause, exploitation steps, payloads, bypasses, impact, and remediation.
+- If a HackerOne report is private, unavailable, blocked, or returns no useful content, mark it as unavailable and continue to the next report.
+- Focus on how the vulnerabilities were discovered, not just what they are.
+
+
+LEARNING OBJECTIVE:
+- Understand real-world exploitation flows (not theory).
+- Identify common entry points (endpoints, parameters, headers, user inputs).
+- Learn bypass techniques and edge cases used by real hunters.
+- Detect patterns in IDOR, BAC, Information Disclosure, XSS, SSRF, and other vulnerabilities.
+- Learn how small misconfigurations were chained into critical impact.
+
+APPLICATION PHASE:
+After learning, you MUST:
+- Actively apply learned techniques during scanning.
+- Map learned attack patterns to the target application.
+- Reuse payload styles and logic where applicable.
+- Attempt similar exploitation paths on discovered endpoints.
+- Prioritize tests based on real-world success patterns.
+- Think like the original hunters who found those bugs.
+
+EXECUTION REQUIREMENT:
+- Do NOT proceed with shallow scanning.
+- Your testing MUST reflect real bug bounty methodologies derived from the reports.
+- Continuously adapt findings during the scan using learned knowledge.
+
+FAILURE CONDITION:
+- If you do not perform this learning phase, the scan is considered incomplete.
+
+You are not just scanning — you are applying real-world hacker knowledge to break the target.
+
+# Information gathering phase and endpoints from JavaScript files
+
+
+## JAVASCRIPT INTELLIGENCE MINING 
+
+After downloading every .js file with curl.exe, READ and ANALYZE the full content
+with your own intelligence.
+
+WHAT TO LOOK FOR — READ EACH JS FILE AND MENTALLY SCAN FOR ALL OF THE FOLLOWING:
+
+### CATEGORY 1: HARDCODED SECRETS & CREDENTIALS
+
+- API keys: strings matching patterns like sk-, pk_, AKIA, AIza, SG., ghp_, xox
+- Bearer tokens or JWT strings hardcoded in variables
+- Passwords, secrets, or private keys assigned to variables
+- Base64 blobs that decode to credentials
+- AWS/GCP/Azure access key patterns
+- Stripe, Twilio, SendGrid, Mailgun, Firebase keys
+- Any variable named: apiKey, secretKey, accessToken, authToken, password,clientSecret, privateKey, appSecret, encryptionKey
+
+### CATEGORY 2: UNDOCUMENTED ENDPOINTS & API ROUTES
+
+- String literals containing /api/, /v1/, /v2/, /internal/, /admin/, /graphql/
+- fetch() or axios calls with hardcoded URL strings or path fragments
+- XMLHttpRequest calls with hardcoded endpoints
+- baseUrl, apiUrl, endpoint, host variables pointing to internal or staging URLs
+- Any URL pointing to dev., staging., internal., beta., test. subdomains
+- WebSocket URLs (ws://, wss://)
+
+For every endpoint found: immediately test it with curl.exe.
+
+STRICT RULES:
+
+- For each endpoint you extract (post, get, delete, or patch), extract all the parameters that the endpoint needs from the JavaScribe file.
+- To find the parameters required for a specific endpoint, you must search through all the JavaScript files you extracted to find them.
+- Sometimes, after testing the endpoint without parameters, the response will ask you to enter the parameters x and x. Don't despair during this error; you must view the error and correct the request based on the error.
+
+==Ignoring the strict rules above means failure==
+
+
+### CATEGORY 3: AFTER ANALYZING EACH JS FILE:
+
+  1. List every finding from the 2 categories above
+  2. For every endpoint discovered: test it immediately with curl.exe
+  3. Place all the endpoints you discovered in a file
+
+
+
+
+
+
 
