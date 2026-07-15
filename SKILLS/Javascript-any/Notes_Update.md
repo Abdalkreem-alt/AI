@@ -1,5 +1,5 @@
 
-1- Update One (Pending):
+## 1- Update One (Pending):
 
 Please modify Phase 6 to make it more thorough and recursive. Train it so that when it analyzes a URL, it extracts all discovered links from that page, then analyzes each of those links using the methodology defined in the skills. If any of those links reveal additional links, it should continue recursively, repeating the same process until no new links are found.
 
