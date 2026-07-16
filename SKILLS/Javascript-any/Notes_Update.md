@@ -9,3 +9,6 @@ Please modify Phase 6 to make it more thorough and recursive. Train it so that w
 
 ## 2- Saving results in correct, organized paths.
 
+## 3- add 
+
+Add a feature to the skills that searches for all domains present in the file, regardless of whether they are subdomains or domains.
