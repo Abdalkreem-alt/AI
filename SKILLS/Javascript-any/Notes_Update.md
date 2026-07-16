@@ -7,3 +7,5 @@ Please modify Phase 6 to make it more thorough and recursive. Train it so that w
 <img width="2800" height="4089" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/48ab63ca-4629-4ba0-b6ab-9717ddb80f85" />
 
 
+## 2- Saving results in correct, organized paths.
+
