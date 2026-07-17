@@ -107,8 +107,33 @@ Do not stop after finishing the original JavaScript file. Continue processing
 newly discovered files until the pending queue is empty.
 
 
-## 2- Saving results in correct, organized paths.
-
-## 3- add 
+## 2- Saving results in correct, organized paths.(confirm)
+```
+js-intelligence/
+└── {main-domain}/
+    └── {subdomain-name}/
+        ├── input/
+        │   ├── urls.txt
+        │   └── js-urls.txt
+        ├── runtime/
+        │   ├── url-index.json
+        │   └── source-map-notes/
+        ├── analysis/
+        │   ├── file-notes/
+        │   ├── endpoints.json
+        │   ├── parameters.json
+        │   ├── secrets-redacted.json
+        │   ├── postmessage.json
+        │   ├── dom-xss.json
+        │   ├── storage.json
+        │   └── access-control.json
+        ├── requests/
+        │   ├── request-log.jsonl
+        │   └── response-bodies/
+        └── reports/
+            ├── summary.md
+            └── full-report.md
+```
+## 3- add (Confirm)
 
 Add a feature to the skills that searches for all domains present in the file, regardless of whether they are subdomains or domains.
