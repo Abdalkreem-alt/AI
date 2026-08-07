@@ -1,6 +1,6 @@
 ---
 name: hunt-idor
-description: Hunting skill for IDOR vulnerabilities. Strategy 1 is a lightweight single-endpoint, single-session tampering check; Strategy 2 is the full multi-account hunting methodology built from 26 public bug bounty reports. Use when hunting IDOR on any target.
+description: Hunting skill for IDOR vulnerabilities. Strategy 1 is a lightweight single-endpoint, single-session tampering check; Strategy 2 is a resource-hierarchy reasoning approach for discovering and testing nested/child endpoints; Strategy 3 is the full multi-account hunting methodology built from 26 public bug bounty reports. Use when hunting IDOR on any target.
 sources: github, hackerone_public
 report_count: 26
 ---
@@ -27,8 +27,13 @@ under a bug bounty program).
   victim's account actually owns)
 
 No other inputs are required for Strategy 1. Strategy 2 additionally
-assumes two full accounts (attacker + victim) can be used to browse
-the target and capture traffic, as described in that section.
+relies on reading each response returned to the attacker's session
+to reason about the API's resource hierarchy (no extra credentials
+needed beyond the attacker session, unless child-resource ownership
+needs to be verified — in which case the victim session is used the
+same way as in Strategy 1). Strategy 3 additionally assumes two full
+accounts (attacker + victim) can be used to browse the target and
+capture traffic, as described in that section.
 
 ---
 
@@ -135,7 +140,149 @@ Include:
 
 ---
 
-## Strategy 2: Full Cross-Account Hunting Methodology
+## Strategy 2: API Resource Hierarchy Reasoning & Endpoint Discovery
+
+Instead of treating each endpoint as an isolated path, reason about
+the target API as a hierarchical resource tree, and use each
+response to infer and construct the next endpoint to test. This
+strategy exists to find IDOR-testable endpoints that were never
+directly observed — nested/child resources that only become visible
+once you follow the relationships a response implies.
+
+### Step 1: Identify the Current Resource
+For any endpoint being inspected, determine:
+- Is it a **collection** (returns an array of objects) or a
+  **single resource** (returns one object)?
+- What resource type does it represent (e.g. `teams`, `projects`,
+  `accounts`)?
+
+```text
+/api/v1/teams            → Collection<Team>
+/api/v1/teams/team_123   → Team (single resource)
+```
+
+### Step 2: Extract Identifiers From the Response
+Pull out every field that looks like a unique identifier, e.g.:
+```text
+id, uid, userId, teamId, orgId, organizationId,
+accountId, workspaceId, projectId, memberId,
+integrationId, deploymentId, ownerId
+```
+Each such ID is a candidate for building the next, more specific
+endpoint: `/api/v1/{resource}/{id}`.
+
+### Step 3: Infer Child Relationships From the Response Body
+Look at the object's fields and nested structures to infer what
+child resources might exist. If a `team` object exposes or
+references members, projects, integrations, roles, permissions,
+settings, etc., treat each as a possible child collection:
+
+```json
+{
+  "id": "team_123",
+  "members": [...],
+  "projects": [...],
+  "owner": {...}
+}
+```
+→ candidate child endpoints:
+```text
+/api/v1/teams/team_123/members
+/api/v1/teams/team_123/projects
+/api/v1/teams/team_123/owner
+```
+
+### Step 4: Follow Child Collections to Child Resources
+If a child collection returns objects with their own IDs, build the
+next level of the tree the same way:
+
+```text
+GET /api/v1/teams/team_123/projects
+→ [{ "id": "project_456" }]
+→ /api/v1/teams/team_123/projects/project_456
+```
+
+### Step 5: Recurse Until the Tree Stops Growing
+Repeat Steps 1–4 on every newly discovered endpoint. Continue
+recursively until a response no longer reveals new identifiers or
+relationships. Mentally (or in notes) maintain a resource graph, e.g.:
+
+```text
+Team
+├── Members
+│   └── Member A, Member B
+├── Projects
+│   └── Project A
+│       ├── Deployments
+│       ├── Domains
+│       └── Members
+├── Integrations
+│   └── Integration A
+└── Settings
+```
+
+This generalizes to any resource chain, not just `teams` — e.g.
+`organizations → projects → environments → deployments`, or
+`accounts → workspaces → projects → members`.
+
+### Step 6: Use API Naming Conventions Already Observed
+Do not blindly append generic nesting words to every endpoint.
+Instead:
+- Base guesses on naming patterns already seen in the target (if
+  the app uses `/api/v1/team-members`, don't assume
+  `/api/v1/teams/{id}/members` without evidence)
+- When a relation name is ambiguous (e.g. "membership"), consider
+  the plausible variants (`membership`, `memberships`, `members`,
+  `team-members`, `teamMembers`) but prefer whichever matches the
+  API's existing style
+- Learn and reuse the target's design language rather than guessing
+  generically
+
+### Step 7: Apply IDOR Testing to Every Discovered Endpoint
+Every specific-resource endpoint uncovered this way (e.g.
+`/api/v1/teams/team_123/members/member_111`,
+`/api/v1/organizations/org_123/projects/project_456/deployments/deployment_789`)
+becomes a candidate endpoint for **Strategy 1** — send it under the
+attacker's session, and apply the full Baseline → Extract →
+Fuzz → Diff → Classify → Report flow from Strategy 1 to that
+specific nested endpoint. If the identifier at any level is
+non-guessable (UUID/opaque), follow the same rule from Strategy 1
+Step 3: retrieve the real value from the victim's session rather
+than guessing it.
+
+### Mental Model (Reference)
+```text
+Current Resource → Returned IDs → Returned Relationships
+→ Possible Child Collections → Child IDs → Specific Child Resources
+→ Repeat
+```
+Or, compressed:
+```text
+RESOURCE → ID → CHILD RESOURCE → CHILD ID → NEXT RESOURCE
+```
+Example:
+```text
+teams → team_id → members → member_id → permissions
+= /api/v1/teams/{team_id}/members/{member_id}/permissions
+```
+
+The objective of this strategy is not endpoint guessing — it is
+**API structure reconstruction**: build an internal resource
+tree/graph of the application, continuously expanded using evidence
+returned by the API itself, and feed every leaf endpoint discovered
+into Strategy 1's IDOR test flow.
+
+### Execution Constraints (Strategy 2)
+- Only construct and request endpoints that fall within the
+  explicitly authorized testing scope — do not extend discovery
+  into resource types or paths outside scope even if the naming
+  pattern would suggest they exist
+- Same execution constraints as Strategy 1 apply to every discovered
+  endpoint once it is tested
+
+---
+
+## Strategy 3: Full Cross-Account Hunting Methodology
 
 This is the broader, application-wide methodology (not limited to
 one endpoint) for deeper engagements, distilled from 26 public bug
@@ -468,7 +615,7 @@ Standalone IDOR gets paid at Low-Medium for cross-tenant *read*. The real money 
 
 **Operator-level pattern:** when you confirm a read-IDOR, immediately ask: *what state-change accepts the same ID and might also be IDOR'd?* The chain is usually one of: (1) password reset / email change → ATO; (2) refund / withdraw / transfer → financial; (3) role-change / membership-add → privilege escalation.
 
-### Execution Constraints (Strategy 2)
+### Execution Constraints (Strategy 3)
 - Same constraints as Strategy 1: respect rate limits, avoid destructive payloads against production data unless explicitly authorized, stop and ask before any irreversible action.
 - Chain steps (email-change → password reset, refunds, role escalation) must only be executed against test/authorized accounts and confirmed reversible, or with explicit user sign-off — never carried out against real third-party accounts even within an authorized bug bounty scope without prior confirmation from the user.
 
@@ -485,6 +632,9 @@ Standalone IDOR gets paid at Low-Medium for cross-tenant *read*. The real money 
 
 ## Note
 Strategy 1 (Response-Reflected Parameter Tampering) is the fast,
-single-endpoint check. Strategy 2 (Full Cross-Account Hunting
-Methodology) is the deeper, application-wide pass. Additional
-strategies can be appended as further sections later.
+single-endpoint check. Strategy 2 (API Resource Hierarchy Reasoning
+& Endpoint Discovery) expands coverage by reconstructing the API's
+resource tree and feeding discovered endpoints into Strategy 1.
+Strategy 3 (Full Cross-Account Hunting Methodology) is the deeper,
+application-wide pass. Additional strategies can be appended as
+further sections later.
