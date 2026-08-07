@@ -72,6 +72,14 @@ original value, to isolate the effect of each parameter).
 **For sensitive boolean fields (admin, public...):**
 - Flip the value (`true` → `false` and vice versa)
 
+**For non-guessable identifiers (UUIDs, hashed/opaque IDs):**
+- If the identifier is not sequential/guessable (e.g. a UUID like
+  `PROJECT_ID`), do not try to brute-force or guess it. Instead, go
+  to the victim's session/account, retrieve the real ID for that
+  same resource (e.g. the victim's actual `PROJECT_ID`), and use
+  that exact value in the tampered request under the attacker's
+  session.
+
 **For placement:** try the same parameter in every plausible location:
 - Query string: `?user=1003`
 - JSON body: `{"user": "1003"}`
