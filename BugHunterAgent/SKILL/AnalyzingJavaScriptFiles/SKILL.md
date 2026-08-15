@@ -73,63 +73,64 @@ manual reading — do not skip a file because tooling isn't available.
 ## Required Workspace Structure
 
 Create this tree before starting, using `{main-domain}` as the primary domain
-and `{subdomain-name}` as the subdomain (e.g., `js-intelligence/att.com/admin/`).
-Every JavaScript file from the same subdomain shares the same output directory.
+and `{subdomain-name}` as the subdomain. Every JavaScript file from the same
+subdomain shares the same output directory.
 
 For example, given `https://admin.att.com/main.213123asd.js` and
-`https://admin.att.com/main.f983mceew.js`, both use:
+`https://admin.att.com/main.f983mceew.js` on `dashboard.vercel.com` of
+`vercel.com`, both use:
 
 ```
-js-intelligence/att.com/admin/
+bug-hunter/vercel.com/dashboard.vercel.com/AnalyzingJavaScriptFiles/
 ```
 
 ```
-js-intelligence/
+bug-hunter/
 └── {main-domain}/
     └── {subdomain-name}/
-        ├── input/
-        │   ├── urls.txt
-        │   └── js-urls.txt
-        ├── runtime/
-        │   ├── url-index.json
-        │   ├── triage.json
-        │   └── source-map-notes/
-        ├── analysis/
-        │   ├── file-notes/
-        │   ├── endpoints.json
-        │   ├── parameters.json
-        │   ├── secrets-redacted.json
-        │   ├── postmessage.json
-        │   ├── dom-xss.json
-        │   ├── storage.json
-        │   ├── access-control.json
-        │   └── dependencies.json
-        ├── requests/
-        │   ├── request-log.jsonl
-        │   └── response-bodies/
-        └── reports/
-            ├── summary.md
-            └── full-report.md
+        └── AnalyzingJavaScriptFiles/
+            ├── endpoint.json
+            ├── parameter.json
+            ├── inputurljs.txt
+            └── notes/
 ```
+
+**Only these outputs are allowed.** `AnalyzingJavaScriptFiles/` contains
+exactly four items — nothing else:
+
+- `inputurljs.txt` — the seed URL list plus every recursively discovered
+  JavaScript URL (one per line; `#` starts a comment).
+- `endpoint.json` — every reconstructed endpoint (see Phase 7).
+- `parameter.json` — every parameter/field identified (see Phase 6
+  Category 5).
+- `notes/` — all observations, findings, assumptions, interesting behaviors,
+  hypotheses, and other useful information discovered while analyzing the
+  files. Per-file analysis notes, the discovery index and triage, secrets /
+  postMessage / DOM-XSS / access-control / dependency findings, request test
+  results, and the final report all live inside `notes/`.
+
+Do not create or save any additional files outside this structure. Runtime
+state, category findings, request logs, source-map notes, and reports are
+written only into `notes/`.
 
 ### Incremental Update Rule
 
 When additional JavaScript files are provided for a subdomain that already
-has a workspace under `js-intelligence/{main-domain}/{subdomain-name}/`:
+has a workspace under
+`bug-hunter/{main-domain}/{subdomain-name}/AnalyzingJavaScriptFiles/`:
 
 1. **Never delete** existing files or directories.
-2. **Update** existing JSON/JSONL/text files by appending new entries and
-   removing duplicates (de-duplicate on unique keys like URL, endpoint path,
-   parameter name, finding title, etc.).
+2. **Update** existing JSON/text files by appending new entries and removing
+   duplicates (de-duplicate on unique keys like URL, endpoint path, parameter
+   name, finding title, etc.).
 3. **Add** new findings, endpoints, parameters, secrets, and analysis notes
-   into the existing JSON/JSONL files. Do not overwrite or replace the
-   existing content.
+   into the existing files. Do not overwrite or replace the existing content.
 4. **Extract only unique entries** when merging — if an entry with the same
    unique identifier already exists, skip it; if it differs, update it.
-5. **Regenerate** `summary.md` and `full-report.md` after each session to
-   reflect the combined state of all analysis.
-6. Add new file notes under `analysis/file-notes/` for each newly analyzed
-   JavaScript file. Never delete or replace existing file-note files.
+5. **Regenerate** the consolidated analysis note in `notes/` after each
+   session to reflect the combined state of all analysis.
+6. Add new file notes under `notes/` for each newly analyzed JavaScript file.
+   Never delete or replace existing note files.
 
 ---
 
@@ -164,10 +165,10 @@ Load the user's initial JavaScript URL list into a discovery queue and a
 seen-URL set. Create or clear the discovery state file:
 
 ```powershell
-$Root = ".\js-intelligence\{main-domain}\{subdomain-name}"
+$Root = ".\bug-hunter\{main-domain}\{subdomain-name}\AnalyzingJavaScriptFiles"
 
 # Load seed URLs from the user-provided file
-$SeedUrls = Get-Content "$Root\input\js-urls.txt" |
+$SeedUrls = Get-Content "$Root\inputurljs.txt" |
     ForEach-Object { $_.Trim() } |
     Where-Object { $_ -and -not $_.StartsWith("#") }
 
@@ -467,8 +468,8 @@ $UrlIndex = $Seen | Sort-Object | ForEach-Object {
     }
 }
 
-# Write to url-index.json (merge if existing)
-$IndexPath = "$Root\runtime\url-index.json"
+# Write to notes/discovery-index.json (merge if existing)
+$IndexPath = "$Root\notes\discovery-index.json"
 if (Test-Path $IndexPath) {
     $Existing = Get-Content $IndexPath -Raw | ConvertFrom-Json
     $Combined = @($Existing) + @($UrlIndex) | Sort-Object url -Unique
@@ -477,20 +478,21 @@ if (Test-Path $IndexPath) {
     $UrlIndex | ConvertTo-Json -Depth 3 | Out-File -FilePath $IndexPath -Encoding UTF8
 }
 
-Write-Host "Saved $TotalDiscovered URLs to $Root\runtime\url-index.json"
+Write-Host "Saved $TotalDiscovered URLs to $Root\notes\discovery-index.json"
 ```
 
 ### Step 7 — Deduplicate the URL Index
 
 The `$Seen` HashSet prevents duplicates during discovery. As a final safeguard
-after the loop completes, run an explicit deduplication pass on `url-index.json`:
+after the loop completes, run an explicit deduplication pass on the discovery
+index:
 
 ```powershell
-$IndexPath = "$Root\runtime\url-index.json"
+$IndexPath = "$Root\notes\discovery-index.json"
 $IndexData = Get-Content $IndexPath -Raw | ConvertFrom-Json
 $Deduplicated = $IndexData | Sort-Object url -Unique
 $Deduplicated | ConvertTo-Json -Depth 3 | Out-File -FilePath $IndexPath -Encoding UTF8
-Write-Host "After deduplication: $($Deduplicated.Count) unique JavaScript URLs in url-index.json"
+Write-Host "After deduplication: $($Deduplicated.Count) unique JavaScript URLs in notes/discovery-index.json"
 ```
 
 ### Step 8 — Extract Domains and Subdomains from JavaScript Content
@@ -515,11 +517,10 @@ domains and subdomains the application interacts with from the client side.
   unless they represent real application dependencies.
 - Deduplicate all discovered domains and subdomains into a sorted list.
 
-Save the results to `domaininjavascript.txt` at the main-domain level of the
-workspace:
+Save the results to `notes\domains-in-javascript.txt`:
 
 ```powershell
-$DomainFile = ".\js-intelligence\$MainDomain\domaininjavascript.txt"
+$DomainFile = "$Root\notes\domains-in-javascript.txt"
 
 # Collect from every JS response seen during discovery
 $DomainSet = [System.Collections.Generic.HashSet[string]]::new(
@@ -581,7 +582,7 @@ derived solely from user-provided seed URLs or external knowledge.
 - Third-party analytics (Google Analytics, Segment, Amplitude, Mixpanel, etc.)
 - Ad/tracking pixels
 - CDN-hosted libraries from non-authorized domains (cdnjs, unpkg, jsdelivr) —
-  note their name/version in `analysis/dependencies.json` per Category 9
+  note their name/version in `notes\dependencies.md` per Category 9
   without queueing them for full analysis
 - Social media widgets
 - Chat/intercom widgets from external providers
@@ -648,8 +649,8 @@ much of it vendor/library code with no application logic. Triage decides
 *sequencing and depth of attention*, not which files get skipped.
 
 Before full reading, do a single lightweight pass over every file in
-`runtime/url-index.json` to compute a priority score and record it in
-`runtime/triage.json`:
+`notes\discovery-index.json` to compute a priority score and record it in
+`notes\triage.json`:
 
 1. **Filename/path signal.** Boost priority for URLs or webpack chunk names
    containing terms like `admin`, `auth`, `login`, `account`, `billing`,
@@ -989,6 +990,9 @@ For each record: field name, request method, endpoint, data type, default
 value, source of value, whether visible in UI, whether derived from storage,
 whether user-controlled, whether security-sensitive.
 
+Record every parameter/field identified here in `parameter.json` (one entry
+per parameter, deduplicated on parameter name + endpoint).
+
 Trace values loaded from `localStorage`, `sessionStorage`, cookies, URL
 parameters, global variables, React/Redux state, Vue stores, bootstrap data.
 
@@ -1089,7 +1093,7 @@ reading in Phase 3.5):
    sometimes inlined by bundlers, distinctive version-string constants
    (e.g. `VERSION = "1.2.3"` near a recognizable library's characteristic code).
 2. Record each `{library, version, source_file}` triple in
-   `analysis/dependencies.json` — do not guess a version from partial
+   `notes\dependencies.md` — do not guess a version from partial
    evidence; mark it `unresolved` if it can't be confirmed.
 3. Cross-reference extracted name/version pairs against publicly known CVEs
    for that library and version (e.g. via a vulnerability database lookup, if
@@ -1112,7 +1116,7 @@ Deduplicate while preserving evidence. Normalize `/api/users/123` and
 `/api/users/456` into `/api/users/{id}`. Do not merge routes that may have
 different meanings.
 
-Store each endpoint as JSON:
+Store each endpoint in `endpoint.json` as JSON:
 ```json
 {
   "method": "GET",
@@ -1189,6 +1193,11 @@ validation status, limitations, and recommended remediation.
 ---
 
 ## Phase 11 — Findings Report Format
+
+Write the consolidated report to `notes\final-report.md` (the only report
+output — there is no separate reports/ directory). Per-file notes and
+findings are recorded in `notes\` as they are discovered; the final report
+aggregates them.
 
 ### Executive Summary
 
@@ -1271,7 +1280,7 @@ appropriate).
 2. Verify each discovered URL is JavaScript before queueing. Skip HTML, JSON,
    error pages, and third-party scripts outside scope.
 3. Resolve all relative URLs against parent file URLs. Remove duplicates.
-4. Save the complete discovered URL list to `runtime/url-index.json`.
+4. Save the complete discovered URL list to `notes\discovery-index.json`.
 5. Triage files by priority signal before full reading, but still read every
    file completely — triage changes order and depth of attention, never
    whether a file gets read.
@@ -1325,17 +1334,14 @@ appropriate).
 
 ## Quick-Start PowerShell Workflow
 
-Create directories for metadata, notes, requests, and reports only:
+Create only the `notes` directory — all outputs live under
+`AnalyzingJavaScriptFiles/`:
 
 ```powershell
-$Root = ".\js-intelligence\{main-domain}\{subdomain-name}"
+$Root = ".\bug-hunter\{main-domain}\{subdomain-name}\AnalyzingJavaScriptFiles"
 foreach ($Dir in @(
-    "$Root\input",
-    "$Root\runtime",
-    "$Root\runtime\source-map-notes",
-    "$Root\analysis\file-notes",
-    "$Root\requests\response-bodies",
-    "$Root\reports"
+    "$Root",
+    "$Root\notes"
 )) {
     New-Item -ItemType Directory -Path $Dir -Force | Out-Null
 }
@@ -1345,8 +1351,8 @@ After Phase 2 (recursive discovery) and Phase 3.5 (triage), read the full
 discovered URL index in priority order and process every file:
 
 ```powershell
-$IndexData = Get-Content "$Root\runtime\url-index.json" -Raw | ConvertFrom-Json
-$TriageData = Get-Content "$Root\runtime\triage.json" -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
+$IndexData = Get-Content "$Root\notes\discovery-index.json" -Raw | ConvertFrom-Json
+$TriageData = Get-Content "$Root\notes\triage.json" -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
 $PriorityOrder = @{ "high" = 0; "medium" = 1; "low" = 2 }
 
 $JsUrls = $IndexData | ForEach-Object { $_.url } |
@@ -1402,7 +1408,7 @@ Begin with the JavaScript files the user provides. Use Phase 2 to recursively
 discover every additional JavaScript file referenced within them — static imports,
 dynamic imports, code-split chunks, worker files, source maps, and inline
 JavaScript URLs — until no new files remain. Save the complete list to
-`runtime/url-index.json`. Triage the files by likely relevance (Phase 3.5),
+`notes\discovery-index.json`. Triage the files by likely relevance (Phase 3.5),
 then apply the full 9-category analysis (Phase 6) to every single discovered
 file in priority order, ensuring every finding records its source JavaScript
 filename or URL and that every file — regardless of triage priority —
