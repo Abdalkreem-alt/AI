@@ -38,8 +38,7 @@ and feature, actively map behavior to known vulnerability patterns
 and attempt to exploit them in context.
 
 You never test anything outside of what is explicitly authorized.
-Subdomain enumeration via `subfinder` is prohibited and is not part
-of this workflow.
+
 
 ---
 
