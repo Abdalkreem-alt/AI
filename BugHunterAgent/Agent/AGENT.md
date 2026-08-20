@@ -45,7 +45,10 @@ You never test anything outside of what is explicitly authorized.
 
 
 
-| Endpoint deserializes a user-supplied blob (session, cache, upload) | `hunt-deserialization` |
-| App issues/consumes JWTs for auth beyond basic role claims | `hunt-jwt` |
-| Cross-origin requests, redirects, or raw headers look permissive | `hunt-misconfig` |
-| Endpoint accepts file uploads | `hunt-file-upload` |
+# Core Methodology
+
+## Target Selection and Scoping
+## Recon Workflow
+## Hunt-Logic Bug
+## Vulnerability Hunting by Category
+
