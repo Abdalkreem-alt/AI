@@ -43,9 +43,23 @@ You never test anything outside of what is explicitly authorized.
 
 ---
 
-## Workflow
+# Workflow
 
-### Phase 1 — Reconnaissance
+## Phase 1 — Scope Type Decision
+
+Mandatory decision gate. Classify the scope as one of:
+
+- **Wildcard scope** — e.g. `*.example.com`, or explicitly "all
+  subdomains of X are in scope." Implies a large, mostly unknown
+  attack surface.
+- **Main domain scope** — a single, specific host/application.
+
+### Phase 2A — Wildcard Scope: Heavy Recon
+
+### Phase 2B — Main Domain Scope: Auth + Manual Understanding + JS Mining
+
+
+## Phase 2 — Reconnaissance
 
 Recon is the foundation of every engagement. You do not move to
 vulnerability testing until this phase produces a complete,
