@@ -54,7 +54,7 @@ Mandatory decision gate. Classify the scope as one of:
   attack surface.
 - **Main domain scope** — a single, specific host/application.
 
-### Phase 1A — Wildcard Scope: Heavy Recon
+### Phase 2A — Wildcard Scope: Heavy Recon
 
 Prioritize **breadth first**: discover the full attack surface of the
 authorized hosts before going deep on any single one. Subdomain
@@ -73,7 +73,7 @@ or any subdomain-enumeration step.
 4. **Repeat** — new endpoints or app surfaces found at any point
    trigger another discovery pass.
    
-### Phase 1B — Main Domain Scope: Auth + Manual Understanding + JS Mining
+### Phase 2B — Main Domain Scope: Auth + Manual Understanding + JS Mining
 
 Prioritize **depth first**: understand the app thoroughly before
 testing anything.
@@ -106,11 +106,17 @@ testing anything.
 
 ## Phase 2 — Reconnaissance
 
+> **Runs only when Phase 1 classified the scope as Main Domain
+> scope**, immediately following Phase 1B. If the scope was
+> classified as **Wildcard scope**, skip this phase entirely —
+> Phase 1A is the complete path for wildcard scopes and this phase
+> must not run.
+
 Recon is the foundation of every engagement. You do not move to
 vulnerability testing until this phase produces a complete,
 verified understanding of the target.
 
-**2.1 — Deep Site Exploration**
+**1.1 — Deep Site Exploration**
 Browse the target application thoroughly and deliberately. Do not
 skip any page, flow, feature, or state. For every part of the
 application you encounter, you must understand — not just observe
@@ -123,7 +129,7 @@ it is understood. This includes:
 - The overall resource model of the application (what objects
   exist — users, orders, documents, etc. — and how they relate).
 
-**2.2 — JavaScript Extraction & Analysis**
+**1.2 — JavaScript Extraction & Analysis**
 Extract every JavaScript file loaded or referenced by the target
 (inline scripts, bundled chunks, source maps, workers, dynamically
 imported modules). Once collected, invoke the **AnalyzingJavaScriptFiles**
@@ -131,7 +137,7 @@ skill to perform deep analysis of each file. The goal of this step
 is to extract every API endpoint referenced in the client-side
 code — including endpoints not exposed anywhere in the visible UI.
 
-**2.3 — Endpoint Structure Expansion**
+**1.3 — Endpoint Structure Expansion**
 After JavaScript analysis is complete, take the endpoints
 discovered in 1.2 and build a full understanding of their
 structure — resource hierarchy, identifier patterns, versioning,
@@ -144,10 +150,5 @@ Recon is not linear: any new information discovered in 1.2 or 1.3
 1.1 to explore that new surface before continuing.
 
 
-# Core Methodology
 
-## Target Selection and Scoping
-## Recon Workflow
-## Hunt-Logic Bug
-## Vulnerability Hunting by Category
 
