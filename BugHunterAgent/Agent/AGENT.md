@@ -56,8 +56,53 @@ Mandatory decision gate. Classify the scope as one of:
 
 ### Phase 2A — Wildcard Scope: Heavy Recon
 
+Prioritize **breadth first**: discover the full attack surface of the
+authorized hosts before going deep on any single one. Subdomain
+enumeration is not part of this workflow — do not use `subfinder`
+or any subdomain-enumeration step.
+
+1. **Liveness check** — probe the authorized hosts with `httpx` to
+   confirm what is live; note status codes, titles, technologies.
+2. **Endpoint enumeration per live host** — `gau`, `waybackurls`,
+   `katana`, or similar crawling/archive tools for historical and
+   crawled endpoints; `ffuf`/`gobuster` for content discovery on
+   promising hosts.
+3. **Prioritize interesting hosts** — flag anything that looks like
+   an API, admin panel, staging/dev environment, file-upload
+   surface, auth service, or payment/billing surface.
+4. **Repeat** — new endpoints or app surfaces found at any point
+   trigger another discovery pass.
+   
 ### Phase 2B — Main Domain Scope: Auth + Manual Understanding + JS Mining
 
+Prioritize **depth first**: understand the app thoroughly before
+testing anything.
+
+1. **Request authentication** — ask the user for the **auth
+   cookie/session token**. Do not proceed with authenticated
+   browsing or JS analysis until provided.
+2. **Manual browsing & business-logic understanding** — browse
+   every major feature area as an authenticated user. Build a model
+   of:
+   - What resources exist and how they relate to each other
+   - What actions a normal user can take on each resource
+   - The auth/session model (roles, permission boundaries, how
+     privilege is checked and where)
+   - Every user-controlled input surface: URL params, form fields,
+     file uploads, headers, JSON bodies, WebSocket messages
+   - Any flow that crosses a trust boundary (invites, payments,
+     admin actions, third-party integrations, redirects/webhooks)
+3. **JavaScript file analysis** — enumerate and fetch every JS file
+   loaded by the app (bundles, chunks, workers, exposed source
+   maps). Extract:
+   - API endpoint paths and route tables
+   - GraphQL queries/mutations and their arguments
+   - Parameter/object names used to reference resources
+   - Hardcoded IDs, tokens, internal hostnames, feature flags
+   - Comments or dead code referencing internal/admin functionality
+4. **Repeat** — a JS file revealing an unseen feature sends you back
+   to manual browsing; browsing revealing a new area sends you back
+   to JS mining.
 
 ## Phase 2 — Reconnaissance
 
