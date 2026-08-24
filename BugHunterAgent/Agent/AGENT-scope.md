@@ -45,18 +45,37 @@ Classify the engagement as exactly one of:
 State which classification you chose and why, in one or two sentences grounded in what the user/program page actually said.
 
 ## Output
+
 Write both, under `engagements/<target-slug>/scope/`:
 - `scope.md` — human-readable: program, in-scope, out-of-scope, rules/limits, scope type + rationale, test account(s).
 - `scope.json` — machine-readable, structured the same way, for `alr-recon`/`alr-hunt`/`alr-validate` to programmatically check assets against.
 
 Create the engagement root under the **current working directory**:
-                                                                                                                                                                                                                            ```                                                                                                                                                                                                                         engagements/<target-slug>/                                                                                                                                                                                                  
- └── scope/                                                                                                                                                                                                                        ├── scope.md      # human-readable                                                                                                                                                                                          └── scope.json    # machine-readable — the single source of truth                                                                                                                                                    ```
+
+
+```
+engagements/<target-slug>/
+ └── scope/
+    ├── scope.md      # human-readable
+    └── scope.json    # machine-readable — the single source of truth
+```
+
 `<target-slug>` = lowercase alphanumeric + hyphens, derived from the program name (e.g. "Acme Corp Bug Bounty" → `acme-corp`)
 
 Write `scope.json` with exactly this structure (top-level `name`, `in_scope`,`out_of_scope`, `seeds` are kept compatible with the deterministic scope enforcer `engine/scope.py`, when available):
+
 ```json
-```json                                                                                                                                                                                                                     {                                                                                                                                                                                                                             "schema_version": "1.0",                                                                                                                                                                                                    "name": "Acme Corp",                                                                                                                                                                                                         "seeds": ["acme.com"],                                                                                                                                                                                                       "engagement": {                                                                                                                                                                                                                  "slug": "acme-corp",                                                                                                                                                                                                         "name": "Acme Corp",                                                                                                                                                                                                        "created_at": "<ISO-8601 UTC>",                                                                                                                                                                                             "authorization_basis": "bug-bounty|client-signoff|other",                                                                                                                                                                   "platform": "HackerOne|Bugcrowd|Intigriti|Private|Other",                                                                                                                                                                    "status": "scoped"                                                                                                                                                                                               },
+{
+"schema_version": "1.0",
+"name": "Acme Corp",
+"seeds": ["acme.com"],
+"engagement": {
+"slug": "acme-corp",
+"name": "Acme Corp",
+"created_at": "<ISO-8601 UTC>",
+"authorization_basis": "bug-bounty|client-signoff|other",
+"platform": "HackerOne|Bugcrowd|Intigriti|Private|Other",
+"status": "scoped" },
 "program": {                                                                                                                                                                                                                    "name": "Acme",                                                                                                                                                                                                             "policy_url": "https://...",                                                                                                                                                                                                "reporting_url": "https://...",                                                                                                                                                                                             "rules": {                                                                                                                                                                                                                       "allowed_testing": ["active", "passive", "no-automated-scans"],                                                                                                                                                              "rate_limits": "e.g. 10 req/s, no more than X",                                                                                                                                                                             "prohibited": ["destructive actions", "DoS", "social engineering"],                                                                                                                                                         "disclosure": "coordinate-first / 90 days / etc.",                                                                                                                                                                           "contact": "security@example.com"},
      "notes": "anything notable from policy"
 },
