@@ -1,5 +1,5 @@
 ---
-description: Phase 1 of the Alr pipeline — establishes and records what is authorized before any testing happens; classifies the engagement as Wildcard scope or Main-domain scope. Use at the start of every new engagement, before alr-recon.
+description: SCOPE agent — formalizes a bug-bounty engagement scope. Interviews the user (program name, program policy, scope type, in-scope/out-of-scope assets, rules, test accounts), determines the scope type (wildcard / main-domain / company), and writes engagements/<slug>/scope/scope.md and scope.json for the RECON/HUNT/VALIDATE agents. Invoke first in every engagement. Also triggered by "define scope", "scope the engagement", "what is in scope".
 mode: subagent
 temperature: 0
 permission:
@@ -46,12 +46,7 @@ State which classification you chose and why, in one or two sentences grounded i
 
 ## Output
 
-Write both, under `engagements/<target-slug>/scope/`:
-- `scope.md` — human-readable: program, in-scope, out-of-scope, rules/limits, scope type + rationale, test account(s).
-- `scope.json` — machine-readable, structured the same way, for `alr-recon`/`alr-hunt`/`alr-validate` to programmatically check assets against.
-
 Create the engagement root under the **current working directory**:
-
 
 ```
 engagements/<target-slug>/
@@ -119,7 +114,6 @@ Write `scope.json` with exactly this structure (top-level `name`, `in_scope`,`ou
 }
 
 ```
-Append a line to `engagements/<target-slug>/progress.md` noting scope was established and the classification.
 
 ## Hard stop
 If authorization cannot be confirmed, or the target/policy is ambiguous about what's in scope, do not guess — write nothing to `scope.json`, report the gap back to the orchestrator, and stop.
