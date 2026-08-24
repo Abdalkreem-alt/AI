@@ -39,7 +39,7 @@ Rule: **no subdomain enumeration, no searching for other company-owned assets.**
  
 The only recon task in this branch: **extract as many endpoints as possible through deep JavaScript analysis.**
  
-- Use skill: `AnalyzingJavaScriptFiles`
+- Use skill: `AnalyzingJavaScriptFiles` , `ApiEndpointStructure`
 - The skill already knows where to save its own output — do not instruct it on a save location.
 - Goal: maximum endpoint coverage — every route, hidden function, reference to sensitive data, DOM XSS sink, and parameter found inside the JS files.
 ---
