@@ -24,7 +24,7 @@ engagements/<target-slug>/Recon/Wildcard/
 
 This skill authenticates to SecurityTrails and Shodan. Keep this file private (do not commit it to a public repo) since these are live credentials.
 
-```
+```env
 SHODAN_API_KEY=v4Idajo90aBTOcPKJbC2TnmcQCa5Y2P7
 SECURITYTRAILS_API_KEY=3a4h4jZYUihLBilEU3oEhCbowm5wc5Ax
 ```
@@ -39,7 +39,7 @@ Combine these sources rather than relying on any single one:
 2. **SecurityTrails** — historical/passive DNS-based subdomain data (use `SECURITYTRAILS_API_KEY` above)
 3. **Shodan** — subdomain/host discovery via indexed data (use `SHODAN_API_KEY` above)
 4. **crt.name** — Certificate Transparency-based subdomain search, no key required:
-   ```
+   ```url
    https://crt.name/v1/search?apex=<main-domain>
    ```
    Returns the indexed subdomains for the given apex domain directly.
@@ -86,7 +86,7 @@ engagements/<target-slug>/Recon/Wildcard/subdomain.txt
 Run httpx twice against the same subdomain list.
 
 **2a. Full metadata pass:**
-```
+```bash
 cat /engagements/<target-slug>/Recon/Wildcard/subdomain.txt | dnsx -silent | httpx -silent -status-code -title -tech-detect | tee -a /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
 ```
 Output:
