@@ -139,6 +139,7 @@ Example structure:
 
 API spec endpoints are the single highest-leverage recon target on any modern .NET / Node / Python / Java backend. The spec discloses every endpoint, HTTP methods, parameter names + types + formats, models, validation rules — a complete attack-map in JSON. Default routes are commonly left enabled in production. Add this wordlist to the directory-fuzzing phase.
 
+You will take the live subdomains found in the `filter-allInfo.txt` file and perform fuzzing against all the wordlists listed below.
 
 ### 5.a Default discovery path wordlist 
 ```
