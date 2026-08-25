@@ -4,6 +4,7 @@ description: Wildcard-scope subdomain reconnaissance — combines subfinder/Secu
 ---
 
 # Recon — Wildcard Scope
+Full asset discovery from nothing to a prioritized URL list ready for hunting.
 
 ## Purpose
 
@@ -15,6 +16,7 @@ All output for this skill lives under:
 ```
 engagements/<target-slug>/Recon/Wildcard/
 ```
+
 
 ---
 
@@ -41,6 +43,29 @@ Combine these sources rather than relying on any single one:
    https://crt.name/v1/search?apex=<main-domain>
    ```
    Returns the indexed subdomains for the given apex domain directly.
+```bash
+TARGET="target.com"
+
+# Step 0: Passive — crt.name certificate transparency (no API key needed)
+curl -s "https://crt.name/v1/search?apex=<main-domain>" | tee -a  /engagements/<target-slug>/Recon/Wildcard/subdomain.txt
+
+# Step 1: subfinder (passive multi-source)
+subfinder -d $TARGET -silent | anew /engagements/<target-slug>/Recon/Wildcard/subdomain.txt
+assetfinder --subs-only $TARGET | anew /engagements/<target-slug>/Recon/Wildcard/subdomain.txt
+
+
+# Step 4: URL crawl
+cat /tmp/live.txt | awk '{print $1}' | katana -d 3 -jc -kf all -silent | anew /tmp/urls.txt
+
+# Step 5: Historical URLs
+echo $TARGET | waybackurls | anew /tmp/urls.txt
+gau $TARGET --subs | anew /tmp/urls.txt
+
+echo "[+] Total URLs: $(wc -l < /tmp/urls.txt)"
+
+# Step 6: Nuclei scan
+nuclei -l /tmp/live.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /tmp/nuclei.txt
+```
 
 **5. JS-driven subdomain discovery (recursive):** For every domain already found — from the four sources above, or from a previous pass of this same technique — pull its JavaScript files and search them for references to the main domain. Example: if the main domain is `att.com`, search each JS file for any `*.att.com` reference. Any subdomain surfaced this way (e.g. `subdomain.att.com`) that isn't already in the list gets added.
 
@@ -62,19 +87,13 @@ Run httpx twice against the same subdomain list.
 
 **2a. Full metadata pass:**
 ```
-httpx -l subdomain.txt -sc -cl -ct -location -title -cname -asn -ip -web-server
+cat /engagements/<target-slug>/Recon/Wildcard/subdomain.txt | dnsx -silent | httpx -silent -status-code -title -tech-detect | tee -a /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
 ```
 Output:
 ```
 engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
 ```
 
-**2b. Plain liveness pass (no flags):**
-```
-httpx -l subdomain.txt -o engagements/<target-slug>/Recon/Wildcard/filter-nullinfo.txt
-```
-
-`filter-nullinfo.txt` is the canonical "live hosts" list consumed by every later stage.
 
 ---
 
