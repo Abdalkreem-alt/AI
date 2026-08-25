@@ -61,8 +61,6 @@ cat /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt | awk '{print $
 echo $TARGET | waybackurls | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 gau $TARGET --subs | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 
-# Step 6: Nuclei scan
-nuclei -l /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /engagements/<target-slug>/Recon/Wildcard/nuclei.txt
 ```
 
 ### recursive technique
