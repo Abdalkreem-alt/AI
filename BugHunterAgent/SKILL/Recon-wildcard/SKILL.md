@@ -55,23 +55,23 @@ assetfinder --subs-only $TARGET | anew /engagements/<target-slug>/Recon/Wildcard
 
 
 # Step 4: URL crawl
-cat /tmp/live.txt | awk '{print $1}' | katana -d 3 -jc -kf all -silent | anew /tmp/urls.txt
+cat /tmp/live.txt | awk '{print $1}' | katana -d 3 -jc -kf all -silent | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 
 # Step 5: Historical URLs
-echo $TARGET | waybackurls | anew /tmp/urls.txt
-gau $TARGET --subs | anew /tmp/urls.txt
-
-echo "[+] Total URLs: $(wc -l < /tmp/urls.txt)"
+echo $TARGET | waybackurls | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
+gau $TARGET --subs | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 
 # Step 6: Nuclei scan
-nuclei -l /tmp/live.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /tmp/nuclei.txt
+nuclei -l /tmp/live.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /engagements/<target-slug>/Recon/Wildcard/nuclei.txt
 ```
+
+### recursive technique
 
 **5. JS-driven subdomain discovery (recursive):** For every domain already found — from the four sources above, or from a previous pass of this same technique — pull its JavaScript files and search them for references to the main domain. Example: if the main domain is `att.com`, search each JS file for any `*.att.com` reference. Any subdomain surfaced this way (e.g. `subdomain.att.com`) that isn't already in the list gets added.
 
 This technique is recursive by design: each newly discovered subdomain gets its own JS files pulled and searched the same way, which can surface still more subdomains. Keep repeating until no new subdomains appear through this method.
 
-**End of Stage 1 — dedup requirement:** once all five sources/techniques have run, merge every result and extract only the unique set before writing the final file (e.g. `sort -u`). `subdomain.txt` must never contain duplicate lines.
+**End of Stage 1 — dedup requirement:** After collecting all subdomains and completing the first phase, verify that there are no duplicate subdomains in the subdomain.txt file.
 
 **Output:**
 ```
@@ -135,9 +135,117 @@ Example structure:
 
 ---
 
-## Stage 5 — Authentication & Authorization Surface (API Host Mapping)
+## Stage 5 — API Spec / Swagger / OpenAPI Discovery (2024-2026 surface)
 
-This is the most important stage in this skill. For every live host, go deep into its JavaScript files again — this time specifically hunting for **API endpoints**. Any host where API endpoints are found gets recorded along with the endpoint(s) discovered for it.
+API spec endpoints are the single highest-leverage recon target on any modern .NET / Node / Python / Java backend. The spec discloses every endpoint, HTTP methods, parameter names + types + formats, models, validation rules — a complete attack-map in JSON. Default routes are commonly left enabled in production. Add this wordlist to the directory-fuzzing phase.
+
+
+### 5.a Default discovery path wordlist 
+```
+# NSwag / Swashbuckle (ASP.NET Core)
+/swagger
+/swagger/
+/swagger/index.html
+/swagger/ui/index.html
+/swagger/v1/swagger.json
+/swagger/v2/swagger.json
+/swagger/v3/swagger.json
+/swagger/docs/v1
+/swagger/docs/v2
+/swagger-ui
+/swagger-ui/
+/swagger-ui.html
+/swagger-resources
+/swagger-resources/configuration/ui
+/nswag
+/nswag/index.html
+/api/swagger
+/api/swagger.json
+/api/swagger/v1/swagger.json
+/api/openapi
+/api/openapi.json
+/api/v1/swagger.json
+/api/v2/swagger.json
+/api-docs
+/api-docs/swagger.json
+
+# OpenAPI generic
+/openapi
+/openapi.json
+/openapi.yaml
+/openapi.yml
+/openapi/v1.json
+/openapi/v2.json
+/openapi/v3.json
+/.well-known/openapi.json
+
+# Java / Spring (Springfox / springdoc)
+/v2/api-docs
+/v3/api-docs
+/v3/api-docs.yaml
+/v3/api-docs/swagger-config
+/swagger-ui/index.html
+
+# Python (FastAPI / Flask-RESTPlus / Connexion / DRF)
+/docs
+/docs/
+/redoc
+/redoc/
+/openapi.json
+/swagger.json
+/swagger/?format=openapi
+/swagger.yaml
+
+# Express / Node / Hapi
+/api-docs
+/api-docs.json
+/swagger.json
+/swagger-stats
+/graphql-docs
+
+# GraphQL adjacent (often co-located)
+/graphql
+/graphiql
+/playground
+/altair
+/voyager
+/graphql/console
+/graphql-explorer
+
+# ReDoc / RapiDoc / Stoplight / alt UIs
+/redoc
+/redoc.html
+/redoc-ui.html
+/rapidoc
+/rapidoc.html
+/stoplight
+/elements
+
+# Misc / dev-leftover
+/actuator
+/actuator/openapi
+/actuator/mappings
+/q/openapi
+/q/swagger-ui
+/docs/swagger.json
+/api/v1/docs
+/api/v2/docs
+/internal/swagger
+/admin/swagger
+/management/swagger
+```
+### 5.b Tools
+
+- `kiterunner` — natively ingests OpenAPI spec, generates requests against the API.
+- `sj` (Swagger Jacker) — purpose-built for Swagger spec exploitation.
+- `apidetector` (brinhosa) — Swagger-UI mass scanner.
+- `XSSwagger` (vavkamil) — detects vulnerable Swagger UI versions (CVE-2018-25031 family).
+- `nuclei -t http/exposures/apis/` — built-in templates for default spec paths.
+
+### 5.c Reminder and Note
+
+- A 404/403 on `/swagger` does NOT mean no spec is exposed. Many .NET projects route the spec under `/api/swagger/v1/swagger.json` rather than `/swagger`. Always test the full path list, not just the root.
+- Furthermore, simply receiving a 200, 301, or 302 status code does not necessarily mean the resource was successfully accessed; sometimes, a 200 status code might actually indicate an error page. Therefore, you should verify that every page you reach contains API documentation or an API endpoint.
 
 **Output:**
 ```
