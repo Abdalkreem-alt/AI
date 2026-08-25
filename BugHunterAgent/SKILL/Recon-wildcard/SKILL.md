@@ -134,6 +134,14 @@ engagements/<target-slug>/Recon/Wildcard/sensitive-data.txt
 
 For every live host, fingerprint the technology stack — frameworks, CDNs, WAFs, server software, and versions where identifiable — and link that fingerprint to the endpoints already discovered for that host.
 
+At this stage, you can use the WhatWeb tool:
+```bash
+whatweb -i engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
+```
+
+You can also rely on logical analysis for each subdomain; for instance, with WordPress, you will find that the source code contains a path such as `/wp-content/`.
+
+
 **Output (JSON, per host):**
 ```
 engagements/<target-slug>/Recon/Wildcard/frameworksInfo.json
