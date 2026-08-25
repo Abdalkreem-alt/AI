@@ -55,14 +55,14 @@ assetfinder --subs-only $TARGET | anew /engagements/<target-slug>/Recon/Wildcard
 
 
 # Step 4: URL crawl
-cat /tmp/live.txt | awk '{print $1}' | katana -d 3 -jc -kf all -silent | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
+cat /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt | awk '{print $1}' | katana -d 3 -jc -kf all -silent | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 
 # Step 5: Historical URLs
 echo $TARGET | waybackurls | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 gau $TARGET --subs | anew /engagements/<target-slug>/Recon/Wildcard/urls.txt
 
 # Step 6: Nuclei scan
-nuclei -l /tmp/live.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /engagements/<target-slug>/Recon/Wildcard/nuclei.txt
+nuclei -l /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt -t ~/nuclei-templates/ -severity critical,high,medium -o /engagements/<target-slug>/Recon/Wildcard/nuclei.txt
 ```
 
 ### recursive technique
@@ -104,7 +104,7 @@ This stage involves scanning all active subdomains (`/engagements/<target-slug>/
 ```bash
 # naabu — fast port scanner from ProjectDiscovery
 # Finds non-standard ports: 8080, 8443, 3000, 8888, 9000, etc.
-cat /tmp/live.txt | awk '{print $1}' | naabu -port 80,443,8080,8443,3000,4000,5000,8000,8888,9000,9090,9200,6379 -silent | tee /tmp/open-ports.txt
+cat /engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt | awk '{print $1}' | naabu -port 80,443,8080,8443,3000,4000,5000,8000,8888,9000,9090,9200,6379 -silent | tee /engagements/<target-slug>/Recon/Wildcard/open-ports.txt
 
 # Why this matters: admin panels, debug services, internal APIs often run on alt ports
 # Example wins: :8080/actuator/env (Spring Boot), :9200/_cat/indices (Elasticsearch), :6379 (Redis)
@@ -134,13 +134,46 @@ engagements/<target-slug>/Recon/Wildcard/sensitive-data.txt
 
 For every live host, fingerprint the technology stack — frameworks, CDNs, WAFs, server software, and versions where identifiable — and link that fingerprint to the endpoints already discovered for that host.
 
-At this stage, you can use the WhatWeb tool:
+5.a At this stage, you can use the WhatWeb tool:
 ```bash
 whatweb -i engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
 ```
 
-You can also rely on logical analysis for each subdomain; for instance, with WordPress, you will find that the source code contains a path such as `/wp-content/`.
+5.b  TECH STACK DETECTION (2 min)
+You can also rely on logical analysis for each subdomain; for instance, with WordPress, you will find that the source code contains a path such as `/wp-content/`
 
+```bash
+# Response headers reveal backend
+curl -sI https://target.com | grep -iE "server|x-powered-by|x-aspnet|x-runtime|x-generator"
+
+# Common signals:
+# Server: nginx + X-Powered-By: PHP/7.4 → PHP backend
+# Server: gunicorn OR X-Powered-By: Express → Python/Node.js
+# X-Powered-By: ASP.NET → .NET
+# Server: Apache Tomcat → Java
+# X-Runtime: Ruby → Ruby on Rails
+
+# Framework from JS bundle paths:
+# /_next/static/ → Next.js
+# /static/js/main.chunk.js → CRA (React)
+# /packs/ → Ruby on Rails + Webpacker
+# /__nuxt/ → Nuxt.js (Vue)
+```
+
+### Stack → Primary Bug Class Map
+
+| Stack | Hunt First | Hunt Second |
+|---|---|---|
+| Ruby on Rails | Mass assignment | IDOR (`:id` routes) |
+| Django | IDOR (ModelViewSet, no object perms) | SSTI (mark_safe) |
+| Flask | SSTI (render_template_string) | SSRF (requests lib) |
+| Laravel | Mass assignment ($fillable) | IDOR (Eloquent, no ownership) |
+| Express (Node.js) | Prototype pollution | Path traversal |
+| Spring Boot | Actuator endpoints (/actuator/env) | SSTI (Thymeleaf) |
+| ASP.NET | ViewState deserialization | Open redirect (ReturnUrl) |
+| Next.js | SSRF via Server Actions | Open redirect via redirect() |
+| GraphQL | Introspection → auth bypass on mutations | IDOR via node(id:) |
+| WordPress | Plugin SQLi | REST API auth bypass |
 
 **Output (JSON, per host):**
 ```
@@ -169,7 +202,7 @@ API spec endpoints are the single highest-leverage recon target on any modern .N
 
 You will take the live subdomains found in the `filter-allInfo.txt` file and perform fuzzing against all the wordlists listed below.
 
-### 5.a Default discovery path wordlist 
+### 6.a Default discovery path wordlist 
 ```
 # NSwag / Swashbuckle (ASP.NET Core)
 /swagger
@@ -263,7 +296,7 @@ You will take the live subdomains found in the `filter-allInfo.txt` file and per
 /admin/swagger
 /management/swagger
 ```
-### 5.b Tools
+### 6.b Tools
 
 - `kiterunner` — natively ingests OpenAPI spec, generates requests against the API.
 - `sj` (Swagger Jacker) — purpose-built for Swagger spec exploitation.
@@ -271,7 +304,7 @@ You will take the live subdomains found in the `filter-allInfo.txt` file and per
 - `XSSwagger` (vavkamil) — detects vulnerable Swagger UI versions (CVE-2018-25031 family).
 - `nuclei -t http/exposures/apis/` — built-in templates for default spec paths.
 
-### 5.c Reminder and Note
+### 6.c Reminder and Note
 
 - A 404/403 on `/swagger` does NOT mean no spec is exposed. Many .NET projects route the spec under `/api/swagger/v1/swagger.json` rather than `/swagger`. Always test the full path list, not just the root.
 - Furthermore, simply receiving a 200, 301, or 302 status code does not necessarily mean the resource was successfully accessed; sometimes, a 200 status code might actually indicate an error page. Therefore, you should verify that every page you reach contains API documentation or an API endpoint.
