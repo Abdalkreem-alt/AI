@@ -97,7 +97,27 @@ engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt
 
 ---
 
-## Stage 3 — Sensitive File & Secret Discovery in JS
+## Stage 3 PORT SCANNING (often skipped — don't skip)
+
+This stage involves scanning all active subdomains (`/engagements/<target-slug>/Recon/Wildcard/filter-allInfo.txt`) that have important ports open.
+
+```bash
+# naabu — fast port scanner from ProjectDiscovery
+# Finds non-standard ports: 8080, 8443, 3000, 8888, 9000, etc.
+cat /tmp/live.txt | awk '{print $1}' | naabu -port 80,443,8080,8443,3000,4000,5000,8000,8888,9000,9090,9200,6379 -silent | tee /tmp/open-ports.txt
+
+# Why this matters: admin panels, debug services, internal APIs often run on alt ports
+# Example wins: :8080/actuator/env (Spring Boot), :9200/_cat/indices (Elasticsearch), :6379 (Redis)
+```
+
+**Output**
+
+Record any host that has an active port at the following path: `/engagements/<target-slug>/Recon/Wildcard/Intersting-Host-Port.txt`
+
+
+---
+
+## Stage 4 — Sensitive File & Secret Discovery in JS
 
 For every live host (status 200, 301, or 302), pull its JavaScript files and check for references to sensitive files — `.env`, `.config`, and similar — plus any other sensitive material such as API keys.
 
@@ -110,7 +130,7 @@ engagements/<target-slug>/Recon/Wildcard/sensitive-data.txt
 
 ---
 
-## Stage 4 — Technology & Function Mapping
+## Stage 5 — Technology & Function Mapping
 
 For every live host, fingerprint the technology stack — frameworks, CDNs, WAFs, server software, and versions where identifiable — and link that fingerprint to the endpoints already discovered for that host.
 
@@ -135,7 +155,7 @@ Example structure:
 
 ---
 
-## Stage 5 — API Spec / Swagger / OpenAPI Discovery (2024-2026 surface)
+## Stage 6 — API Spec / Swagger / OpenAPI Discovery (2024-2026 surface)
 
 API spec endpoints are the single highest-leverage recon target on any modern .NET / Node / Python / Java backend. The spec discloses every endpoint, HTTP methods, parameter names + types + formats, models, validation rules — a complete attack-map in JSON. Default routes are commonly left enabled in production. Add this wordlist to the directory-fuzzing phase.
 
